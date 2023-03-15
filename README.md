@@ -1,4 +1,4 @@
-# go-bipf
+# go-bipf [![CI](https://github.com/boreq/go-bipf/actions/workflows/ci.yml/badge.svg)](https://github.com/boreq/go-bipf/actions/workflows/ci.yml) [![Go Reference](https://pkg.go.dev/badge/github.com/boreq/go-bipf.svg)](https://pkg.go.dev/github.com/boreq/go-bipf)
 
 This a Go implementation of the [BIPF format][spec] (Binary In-Place Format
 format) based on [`github.com/json-iterator/go`][jsoniter].
