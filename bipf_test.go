@@ -281,11 +281,13 @@ func TestMarshal(t *testing.T) {
 					"foo": true,
 				},
 				map[string]any{
-					"type": "Buffer",
 					"data": []int{222, 173, 190, 239},
 				},
+				map[string]any{
+					"type": "Buffer",
+				},
 			},
-			Binary: "ac0322ffffffff3518666f6f0e01bd022074797065304275666665722064617461a40122de00000022ad00000022be00000022ef000000",
+			Binary: "b40322ffffffff3518666f6f0e01dd012064617461a40122de00000022ad00000022be00000022ef00000065207479706530427566666572",
 		},
 
 		// todo order of map keys is not guaranteed so this test is hard to write
