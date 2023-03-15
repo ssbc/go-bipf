@@ -27,6 +27,11 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.21.x'
+
       - name: Determine Go cache paths
         id: golang-path
         run: |
