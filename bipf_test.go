@@ -7,8 +7,10 @@ import (
 	"testing"
 
 	"github.com/boreq/go-bipf"
+	"github.com/boreq/go-bipf/internal"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestMarshal(t *testing.T) {
@@ -711,16 +713,39 @@ func TestComplexStructIntoAny(t *testing.T) {
 
 func BenchmarkSimpleStruct(b *testing.B) {
 	v := newSimpleStruct()
+	p := newSimpleProtoStruct()
 
 	jsonBytes, err := json.Marshal(v)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	bipfBytes, err := bipf.Marshal(v)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
+
+	protoBytes, err := proto.Marshal(p)
+	require.NoError(b, err)
+
+	b.Log("jsonBytes", len(jsonBytes))
+	b.Log("bipfBytes", len(bipfBytes))
+	b.Log("protoBytes", len(protoBytes))
+
+	b.Run("proto_marshal", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := proto.Marshal(p)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("proto_unmarshal", func(b *testing.B) {
+		var target internal.SimpleProtobuf
+		for i := 0; i < b.N; i++ {
+			err := proto.Unmarshal(protoBytes, &target)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 
 	b.Run("json_marshal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -763,16 +788,39 @@ func BenchmarkSimpleStruct(b *testing.B) {
 
 func BenchmarkComplexStruct(b *testing.B) {
 	v := newComplexStruct()
+	p := newComplexProtoStruct()
 
 	jsonBytes, err := json.Marshal(v)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	bipfBytes, err := bipf.Marshal(v)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
+
+	protoBytes, err := proto.Marshal(p)
+	require.NoError(b, err)
+
+	b.Log("jsonBytes", len(jsonBytes))
+	b.Log("bipfBytes", len(bipfBytes))
+	b.Log("protoBytes", len(protoBytes))
+
+	b.Run("proto_marshal", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, err := proto.Marshal(p)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+
+	b.Run("proto_unmarshal", func(b *testing.B) {
+		var target internal.ComplexProtobuf
+		for i := 0; i < b.N; i++ {
+			err := proto.Unmarshal(protoBytes, &target)
+			if err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 
 	b.Run("json_marshal", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
@@ -821,16 +869,31 @@ type simpleStruct struct {
 	Bytes   []byte
 }
 
-func newSimpleStruct() simpleStruct {
-	str := "string"
-	int_64 := int64(123)
-	float_64 := float64(1.123)
+var (
+	vHardString   = "łó\"śð"
+	vSimpleString = "string"
+	vint32        = int32(123)
+	vint64        = int64(123)
+	vfloat32      = float32(1.123)
+	vfloat64      = float64(1.123)
+)
 
+func newSimpleStruct() simpleStruct {
 	return simpleStruct{
-		String:  str,
-		Int64:   int_64,
-		Float64: float_64,
-		Slice:   []string{str},
+		String:  vSimpleString,
+		Int64:   vint64,
+		Float64: vfloat64,
+		Slice:   []string{vSimpleString},
+		Bytes:   []byte{0xDE, 0xAD, 0xBE, 0xEF},
+	}
+}
+
+func newSimpleProtoStruct() *internal.SimpleProtobuf {
+	return &internal.SimpleProtobuf{
+		String_: vSimpleString,
+		Int64:   vint64,
+		Float64: vfloat64,
+		Slice:   []string{vSimpleString},
 		Bytes:   []byte{0xDE, 0xAD, 0xBE, 0xEF},
 	}
 }
@@ -882,44 +945,37 @@ type complexStruct struct {
 }
 
 func newComplexStruct() complexStruct {
-	simpleString := "string"
-	hardString := "łó\"śð"
-	int_32 := int32(123)
-	int_64 := int64(123)
-	float_32 := float32(1.123)
-	float_64 := float64(1.123)
-
 	m := func() map[string]any {
 		return map[string]any{
-			"1": simpleString,
-			"2": hardString,
-			"3": int_32,
-			"4": int_64,
-			"5": float_32,
-			"6": float_64,
+			"1": vSimpleString,
+			"2": vHardString,
+			"3": vint32,
+			"4": vint64,
+			"5": vfloat32,
+			"6": vfloat64,
 		}
 	}
 
 	return complexStruct{
-		SimpleString:    simpleString,
-		HardString:      hardString,
-		SimpleStringPtr: p(simpleString),
-		HardStringPtr:   p(hardString),
+		SimpleString:    vSimpleString,
+		HardString:      vHardString,
+		SimpleStringPtr: p(vSimpleString),
+		HardStringPtr:   p(vHardString),
 
-		Int32:    int_32,
-		Int64:    int_64,
-		Int32Ptr: p(int_32),
-		Int64Ptr: p(int_64),
+		Int32:    vint32,
+		Int64:    vint64,
+		Int32Ptr: p(vint32),
+		Int64Ptr: p(vint64),
 
-		Float32:    float_32,
-		Float64:    float_64,
-		Float32Ptr: p(float_32),
-		Float64Ptr: p(float_64),
+		Float32:    vfloat32,
+		Float64:    vfloat64,
+		Float32Ptr: p(vfloat32),
+		Float64Ptr: p(vfloat64),
 
 		Map:      m(),
 		MapPtr:   p(m()),
-		Slice:    []any{simpleString, hardString, int_32, float_64},
-		SlicePtr: p([]any{simpleString, hardString, int_32, float_64}),
+		Slice:    []any{vSimpleString, vHardString, vint32, vfloat64},
+		SlicePtr: p([]any{vSimpleString, vHardString, vint32, vfloat64}),
 
 		Bytes:    []byte{0xDE, 0xAD, 0xBE, 0xEF},
 		BytesPtr: p([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
@@ -938,18 +994,118 @@ func newComplexStruct() complexStruct {
 			Bytes        []byte
 			BytesPtr     *[]byte
 		}{
-			SimpleString: simpleString,
-			HardString:   hardString,
-			Int32:        int_32,
-			Int64:        int_64,
-			Float32:      float_32,
-			Float64:      float_64,
+			SimpleString: vSimpleString,
+			HardString:   vHardString,
+			Int32:        vint32,
+			Int64:        vint64,
+			Float32:      vfloat32,
+			Float64:      vfloat64,
 			Map:          m(),
 			MapPtr:       p(m()),
-			Slice:        []any{simpleString, hardString, int_32, float_64},
-			SlicePtr:     p([]any{simpleString, hardString, int_32, float_64}),
+			Slice:        []any{vSimpleString, vHardString, vint32, vfloat64},
+			SlicePtr:     p([]any{vSimpleString, vHardString, vint32, vfloat64}),
 			Bytes:        []byte{0xDE, 0xAD, 0xBE, 0xEF},
 			BytesPtr:     p([]byte{0xDE, 0xAD, 0xBE, 0xEF}),
+		},
+	}
+}
+
+func newComplexProtoStruct() *internal.ComplexProtobuf {
+	m := func() map[string]*internal.Any {
+		return map[string]*internal.Any{
+			"1": {Any: &internal.Any_String_{String_: vSimpleString}},
+			"2": {Any: &internal.Any_String_{String_: vHardString}},
+			"3": {Any: &internal.Any_Int32{Int32: vint32}},
+			"4": {Any: &internal.Any_Int64{Int64: vint64}},
+			"5": {Any: &internal.Any_Int64{Int64: vint64}},
+			"6": {Any: &internal.Any_Int64{Int64: vint64}},
+		}
+	}
+
+	return &internal.ComplexProtobuf{
+		SimpleString:    vSimpleString,
+		HardString:      vHardString,
+		SimpleStringPtr: p(vSimpleString),
+		HardStringPtr:   p(vHardString),
+		Int32:           vint32,
+		Int64:           vint64,
+		Int32Ptr:        p(vint32),
+		Int64Ptr:        p(vint64),
+		Float32:         vfloat32,
+		Float64:         vfloat64,
+		Float32Ptr:      p(vfloat32),
+		Float64Ptr:      p(vfloat64),
+		Map1:            m(),
+		Map2:            m(),
+		Slice1: []*internal.Any{
+			{
+				Any: &internal.Any_String_{String_: vSimpleString},
+			},
+			{
+				Any: &internal.Any_String_{String_: vHardString},
+			},
+			{
+				Any: &internal.Any_Int32{Int32: vint32},
+			},
+			{
+				Any: &internal.Any_Double{Double: vfloat64},
+			},
+		},
+		Slice2: []*internal.Any{
+			{
+				Any: &internal.Any_String_{String_: vSimpleString},
+			},
+			{
+				Any: &internal.Any_String_{String_: vHardString},
+			},
+			{
+				Any: &internal.Any_Int32{Int32: vint32},
+			},
+			{
+				Any: &internal.Any_Double{Double: vfloat64},
+			},
+		},
+		Bytes:    []byte{0xDE, 0xAD, 0xBE, 0xEF},
+		BytesPtr: []byte{0xDE, 0xAD, 0xBE, 0xEF},
+		Struct: &internal.ComplexProtobufEmbedded{
+			SimpleString: vSimpleString,
+			HardString:   vHardString,
+			Int32:        vint32,
+			Int64:        vint64,
+			Float32:      vfloat32,
+			Float64:      vfloat64,
+			Map1:         m(),
+			Map2:         m(),
+			Slice1: []*internal.Any{
+				{
+					Any: &internal.Any_String_{String_: vSimpleString},
+				},
+				{
+					Any: &internal.Any_String_{String_: vHardString},
+				},
+				{
+					Any: &internal.Any_Int32{Int32: vint32},
+				},
+				{
+					Any: &internal.Any_Double{Double: vfloat64},
+				},
+			},
+			Slice2: []*internal.Any{
+				{
+					Any: &internal.Any_String_{String_: vSimpleString},
+				},
+				{
+					Any: &internal.Any_String_{String_: vHardString},
+				},
+				{
+					Any: &internal.Any_Int32{Int32: vint32},
+				},
+				{
+					Any: &internal.Any_Double{Double: vfloat64},
+				},
+			},
+			Bytes:    []byte{0xDE, 0xAD, 0xBE, 0xEF},
+			BytesPtr: []byte{0xDE, 0xAD, 0xBE, 0xEF},
 		},
 	}
 }

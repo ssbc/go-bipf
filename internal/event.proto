@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+option go_package = "github.com/boreq/go-bipf/internal";
+
+message SimpleProtobuf {
+  string String = 1;
+  int64 Int64 = 2;
+  double Float64 = 3;
+  repeated string Slice = 4;
+  bytes Bytes = 5;
+}
+
+message Any {
+  oneof any {
+    string String = 1;
+    int32 Int32 = 2;
+    int64 Int64 = 3;
+    float Float = 4;
+    double Double = 5;
+  }
+}
+
+message ComplexProtobuf {
+  string SimpleString = 1;
+  string HardString = 2;
+  optional string SimpleStringPtr = 3;
+  optional string HardStringPtr = 4;
+
+  int32 Int32 = 5;
+  int64 Int64 = 6;
+  optional int32 Int32Ptr = 7;
+  optional int64 Int64Ptr = 8;
+
+  float Float32 = 9;
+  double Float64 = 10;
+  optional float Float32Ptr = 11;
+  optional double Float64Ptr = 12;
+
+  map<string, Any> Map1 = 13;
+  map<string, Any> Map2 = 14;
+
+  repeated Any slice1 = 15;
+  repeated Any slice2 = 16;
+
+  bytes Bytes = 17;
+  optional bytes BytesPtr = 18;
+
+  ComplexProtobufEmbedded Struct = 19;
+}
+
+message ComplexProtobufEmbedded {
+  string SimpleString = 1;
+  string HardString = 2;
+
+  int32 Int32 = 3;
+  int64 Int64 = 4;
+
+  float Float32 = 5;
+  double Float64 = 6;
+
+  map<string, Any> Map1 = 7;
+  map<string, Any> Map2 = 8;
+
+  repeated Any slice1 = 9;
+  repeated Any slice2 = 10;
+
+  bytes Bytes = 11;
+  optional bytes BytesPtr = 12;
+}
