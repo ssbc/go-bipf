@@ -2,7 +2,6 @@ package bipf
 
 import (
 	"encoding"
-	"encoding/json"
 	"errors"
 	"unsafe"
 
@@ -18,9 +17,9 @@ type Unmarshaler interface {
 }
 
 var marshalerType = reflect2.TypeOfPtr((*Marshaler)(nil)).Elem()
-var unmarshalerType = reflect2.TypeOfPtr((*json.Unmarshaler)(nil)).Elem()
-var textMarshalerType = reflect2.TypeOfPtr((*encoding.TextMarshaler)(nil)).Elem()
-var textUnmarshalerType = reflect2.TypeOfPtr((*encoding.TextUnmarshaler)(nil)).Elem()
+var unmarshalerType = reflect2.TypeOfPtr((*Unmarshaler)(nil)).Elem()
+var binaryMarshalerType = reflect2.TypeOfPtr((*encoding.BinaryMarshaler)(nil)).Elem()
+var binaryUnmarshalerType = reflect2.TypeOfPtr((*encoding.BinaryUnmarshaler)(nil)).Elem()
 
 func createDecoderOfMarshaler(typ reflect2.Type) valDecoder {
 	ptrType := reflect2.PtrTo(typ)
@@ -29,9 +28,9 @@ func createDecoderOfMarshaler(typ reflect2.Type) valDecoder {
 			&unmarshalerDecoder{ptrType},
 		}
 	}
-	if ptrType.Implements(textUnmarshalerType) {
+	if ptrType.Implements(binaryUnmarshalerType) {
 		return &referenceDecoder{
-			&textUnmarshalerDecoder{ptrType},
+			&binaryUnmarshalerDecoder{ptrType},
 		}
 	}
 	return nil
@@ -71,51 +70,51 @@ func createEncoderOfMarshaler(ctx *ctx, typ reflect2.Type) (valEncoder, error) {
 		}
 		return &referenceEncoder{encoder}, nil
 	}
-	if typ == textMarshalerType {
+	if typ == binaryMarshalerType {
 		checkIsEmpty, err := createCheckIsEmpty(ctx, typ)
 		if err != nil {
 			return nil, err
 		}
-		enc, err := encoderOf(reflect2.TypeOf(""))
+		enc, err := encoderOf(reflect2.TypeOf([]byte{}))
 		if err != nil {
 			return nil, err
 		}
-		var encoder valEncoder = &directTextMarshalerEncoder{
+		var encoder valEncoder = &directBinaryMarshalerEncoder{
 			checkIsEmpty:  checkIsEmpty,
 			stringEncoder: enc,
 		}
 		return encoder, nil
 	}
-	if typ.Implements(textMarshalerType) {
+	if typ.Implements(binaryMarshalerType) {
 		checkIsEmpty, err := createCheckIsEmpty(ctx, typ)
 		if err != nil {
 			return nil, err
 		}
-		enc, err := encoderOf(reflect2.TypeOf(""))
+		enc, err := encoderOf(reflect2.TypeOf([]byte{}))
 		if err != nil {
 			return nil, err
 		}
-		var encoder valEncoder = &textMarshalerEncoder{
-			valType:       typ,
-			stringEncoder: enc,
-			checkIsEmpty:  checkIsEmpty,
+		var encoder valEncoder = &binaryMarshalerEncoder{
+			valType:      typ,
+			bytesEncoder: enc,
+			checkIsEmpty: checkIsEmpty,
 		}
 		return encoder, nil
 	}
 	// if prefix is empty, the type is the root type
-	if ctx.prefix != "" && ptrType.Implements(textMarshalerType) {
+	if ctx.prefix != "" && ptrType.Implements(binaryMarshalerType) {
 		checkIsEmpty, err := createCheckIsEmpty(ctx, ptrType)
 		if err != nil {
 			return nil, err
 		}
-		enc, err := encoderOf(reflect2.TypeOf(""))
+		enc, err := encoderOf(reflect2.TypeOf([]byte{}))
 		if err != nil {
 			return nil, err
 		}
-		var encoder valEncoder = &textMarshalerEncoder{
-			valType:       ptrType,
-			stringEncoder: enc,
-			checkIsEmpty:  checkIsEmpty,
+		var encoder valEncoder = &binaryMarshalerEncoder{
+			valType:      ptrType,
+			bytesEncoder: enc,
+			checkIsEmpty: checkIsEmpty,
 		}
 		return &referenceEncoder{encoder}, nil
 	}
@@ -170,50 +169,48 @@ func (encoder *directMarshalerEncoder) IsEmpty(ptr unsafe.Pointer) (bool, error)
 	return encoder.checkIsEmpty.IsEmpty(ptr)
 }
 
-type textMarshalerEncoder struct {
-	valType       reflect2.Type
-	stringEncoder valEncoder
-	checkIsEmpty  checkIsEmpty
+type binaryMarshalerEncoder struct {
+	valType      reflect2.Type
+	bytesEncoder valEncoder
+	checkIsEmpty checkIsEmpty
 }
 
-func (encoder *textMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *stream) error {
+func (encoder *binaryMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *stream) error {
 	obj := encoder.valType.UnsafeIndirect(ptr)
 	if encoder.valType.IsNullable() && reflect2.IsNil(obj) {
 		stream.WriteNil()
 		return nil
 	}
-	marshaler := (obj).(encoding.TextMarshaler)
-	bytes, err := marshaler.MarshalText()
+	marshaler := (obj).(encoding.BinaryMarshaler)
+	bytes, err := marshaler.MarshalBinary()
 	if err != nil {
 		return err
 	} else {
-		str := string(bytes)
-		err := encoder.stringEncoder.Encode(unsafe.Pointer(&str), stream)
+		err := encoder.bytesEncoder.Encode(unsafe.Pointer(&bytes), stream)
 		return err
 	}
 }
 
-func (encoder *textMarshalerEncoder) IsEmpty(ptr unsafe.Pointer) (bool, error) {
+func (encoder *binaryMarshalerEncoder) IsEmpty(ptr unsafe.Pointer) (bool, error) {
 	return encoder.checkIsEmpty.IsEmpty(ptr)
 }
 
-type directTextMarshalerEncoder struct {
+type directBinaryMarshalerEncoder struct {
 	stringEncoder valEncoder
 	checkIsEmpty  checkIsEmpty
 }
 
-func (encoder *directTextMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *stream) error {
-	marshaler := *(*encoding.TextMarshaler)(ptr)
+func (encoder *directBinaryMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *stream) error {
+	marshaler := *(*encoding.BinaryMarshaler)(ptr)
 	if marshaler == nil {
 		stream.WriteNil()
 		return nil
 	}
-	bytes, err := marshaler.MarshalText()
+	bytes, err := marshaler.MarshalBinary()
 	if err != nil {
 		return err
 	} else {
-		str := string(bytes)
-		err := encoder.stringEncoder.Encode(unsafe.Pointer(&str), stream)
+		err := encoder.stringEncoder.Encode(unsafe.Pointer(&bytes), stream)
 		if err != nil {
 			return err
 		}
@@ -221,7 +218,7 @@ func (encoder *directTextMarshalerEncoder) Encode(ptr unsafe.Pointer, stream *st
 	return nil
 }
 
-func (encoder *directTextMarshalerEncoder) IsEmpty(ptr unsafe.Pointer) (bool, error) {
+func (encoder *directBinaryMarshalerEncoder) IsEmpty(ptr unsafe.Pointer) (bool, error) {
 	return encoder.checkIsEmpty.IsEmpty(ptr)
 }
 
@@ -252,11 +249,11 @@ func (decoder *unmarshalerDecoder) Decode(ptr unsafe.Pointer, iter *iterator) er
 	return nil
 }
 
-type textUnmarshalerDecoder struct {
+type binaryUnmarshalerDecoder struct {
 	valType reflect2.Type
 }
 
-func (decoder *textUnmarshalerDecoder) Decode(ptr unsafe.Pointer, iter *iterator) error {
+func (decoder *binaryUnmarshalerDecoder) Decode(ptr unsafe.Pointer, iter *iterator) error {
 	valType := decoder.valType
 	obj := valType.UnsafeIndirect(ptr)
 	if reflect2.IsNil(obj) {
@@ -266,12 +263,12 @@ func (decoder *textUnmarshalerDecoder) Decode(ptr unsafe.Pointer, iter *iterator
 		ptrType.UnsafeSet(ptr, unsafe.Pointer(&elem))
 		obj = valType.UnsafeIndirect(ptr)
 	}
-	unmarshaler := (obj).(encoding.TextUnmarshaler)
-	str, err := iter.ReadString()
+	unmarshaler := (obj).(encoding.BinaryUnmarshaler)
+	bytes, err := iter.ReadBuffer()
 	if err != nil {
 		return err
 	}
-	err = unmarshaler.UnmarshalText([]byte(str))
+	err = unmarshaler.UnmarshalBinary(bytes)
 	if err != nil {
 		return err
 	}

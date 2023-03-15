@@ -59,15 +59,15 @@ func decoderOfMapKey(ctx *ctx, typ reflect2.Type) (valDecoder, error) {
 			valType: typ,
 		}, nil
 	}
-	if ptrType.Implements(textUnmarshalerType) {
+	if ptrType.Implements(binaryUnmarshalerType) {
 		return &referenceDecoder{
-			&textUnmarshalerDecoder{
+			&binaryUnmarshalerDecoder{
 				valType: ptrType,
 			},
 		}, nil
 	}
-	if typ.Implements(textUnmarshalerType) {
-		return &textUnmarshalerDecoder{
+	if typ.Implements(binaryUnmarshalerType) {
+		return &binaryUnmarshalerDecoder{
 			valType: typ,
 		}, nil
 	}
@@ -89,23 +89,23 @@ func decoderOfMapKey(ctx *ctx, typ reflect2.Type) (valDecoder, error) {
 
 func encoderOfMapKey(ctx *ctx, typ reflect2.Type) (valEncoder, error) {
 	if typ.Kind() != reflect.String {
-		if typ == textMarshalerType {
-			enc, err := encoderOf(reflect2.TypeOf(""))
+		if typ == binaryMarshalerType {
+			enc, err := encoderOf(reflect2.TypeOf([]byte{}))
 			if err != nil {
 				return nil, err
 			}
-			return &directTextMarshalerEncoder{
+			return &directBinaryMarshalerEncoder{
 				stringEncoder: enc,
 			}, nil
 		}
-		if typ.Implements(textMarshalerType) {
-			enc, err := encoderOf(reflect2.TypeOf(""))
+		if typ.Implements(binaryMarshalerType) {
+			enc, err := encoderOf(reflect2.TypeOf([]byte{}))
 			if err != nil {
 				return nil, err
 			}
-			return &textMarshalerEncoder{
-				valType:       typ,
-				stringEncoder: enc,
+			return &binaryMarshalerEncoder{
+				valType:      typ,
+				bytesEncoder: enc,
 			}, nil
 		}
 	}
