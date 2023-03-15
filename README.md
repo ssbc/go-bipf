@@ -1,7 +1,7 @@
 # go-bipf
 
-This a Go implementation of the [BIPF format][spec] based on
-[`github.com/json-iterator/go`][jsoniter].
+This a Go implementation of the [BIPF format][spec] (Binary In-Place Format
+format) based on [`github.com/json-iterator/go`][jsoniter].
 
 ## Examples
 
