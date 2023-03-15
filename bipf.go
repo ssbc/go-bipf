@@ -19,7 +19,7 @@ const tagKey = "bipf"
 //
 // Otherwise, Marshal uses the following type-dependent default encodings:
 //
-// Boolean values encode as BIPF BULLNULL.
+// Boolean values encode as BIPF BOOLNULL.
 //
 // Floating point numbers encode as BIPF DOUBLE.
 //
@@ -139,7 +139,7 @@ func Marshal(v any) ([]byte, error) {
 //	[]any, for BIPF ARRAY
 //	map[any]any, for BIPF OBJECT
 //	bool, for BIPF BOOLNULL not set to null
-//	nil for BIPF BULLNULL set to null
+//	nil for BIPF BOOLNULL set to null
 //
 // To unmarshal a BIPF array into a slice, Unmarshal resets the slice length
 // to zero and then appends each element to the slice.
