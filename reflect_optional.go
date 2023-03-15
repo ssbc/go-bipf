@@ -1,8 +1,9 @@
 package bipf
 
 import (
-	"github.com/modern-go/reflect2"
 	"unsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 func decoderOfOptional(ctx *ctx, typ reflect2.Type) (valDecoder, error) {

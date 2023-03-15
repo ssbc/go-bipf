@@ -3,8 +3,9 @@ package bipf
 import (
 	"errors"
 	"fmt"
-	"github.com/modern-go/reflect2"
 	"unsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 func decoderOfArray(ctx *ctx, typ reflect2.Type) (valDecoder, error) {
@@ -48,9 +49,8 @@ func (encoder *arrayEncoder) Encode(ptr unsafe.Pointer, stream *stream) error {
 	tmpStream := streamPool.BorrowStream(nil)
 	defer streamPool.ReturnStream(tmpStream)
 
-	elemPtr := unsafe.Pointer(ptr)
 	for i := 0; i < encoder.arrayType.Len(); i++ {
-		elemPtr = encoder.arrayType.UnsafeGetIndex(ptr, i)
+		elemPtr := encoder.arrayType.UnsafeGetIndex(ptr, i)
 		err := encoder.elemEncoder.Encode(elemPtr, tmpStream)
 		if err != nil {
 			return wrapf(err, "type '%v'", encoder.arrayType)

@@ -145,7 +145,6 @@ func (iter *iterator) loadMore() error {
 func (iter *iterator) unreadByte() {
 	iter.numOfReadBytes--
 	iter.head--
-	return
 }
 
 func (iter *iterator) ReadAny() (any, error) {

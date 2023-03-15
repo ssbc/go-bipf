@@ -4,10 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"testing"
+
 	"github.com/boreq/go-bipf"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestMarshal(t *testing.T) {

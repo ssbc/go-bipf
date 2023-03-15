@@ -2,9 +2,10 @@ package bipf
 
 import (
 	"errors"
-	"github.com/modern-go/reflect2"
 	"reflect"
 	"unsafe"
+
+	"github.com/modern-go/reflect2"
 )
 
 type valDecoder interface {

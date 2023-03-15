@@ -2,11 +2,12 @@ package bipf
 
 import (
 	"fmt"
-	"github.com/modern-go/reflect2"
 	"reflect"
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/modern-go/reflect2"
 )
 
 var fieldDecoders = map[string]valDecoder{}
