@@ -23,26 +23,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
-
-      - name: Determine Go cache paths
-        id: golang-path
-        run: |
-          echo "build=$(go env GOCACHE)" >>"$GITHUB_OUTPUT"
-          echo "module=$(go env GOMODCACHE)" >>"$GITHUB_OUTPUT"
-        shell: bash
-
-      - name: Setup Go cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ steps.golang-path.outputs.build }}
-            ${{ steps.golang-path.outputs.module }}
-          key: ${{ runner.os }}-golang-${{ hashFiles('**/go.sum', 'Makefile') }}
-          restore-keys: |
-            ${{ runner.os }}-golang-
+          cache-dependency-path: ${{ hashFiles('**/go.sum', 'Makefile')
 
       - name: Run tests
         run: make ci
