@@ -1,5 +1,5 @@
 .PHONY: ci
-ci: tools test lint fmt tidy check_repository_unchanged
+ci: tools test lint generate fmt tidy check_repository_unchanged
 
 .PHONY: check_repository_unchanged
 check_repository_unchanged: 
